@@ -1,666 +1,1067 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>北アメリカ先住民の伝承：神々と怪物地図</title>
-    <style>
-        :root {
-            --bg-color: #f7f3e9;
-            --panel-bg: #f3ece0;
-            --card-bg: #fffdf7;
-            --text-color: #4a3e2e;
-            --accent-color: #8c6d3b;
-            --accent-dark: #5c4520;
-            --highlight-color: #d4af37;
-            --border-color: #d8cbb5;
-            --shadow: 0 4px 12px rgba(74, 62, 46, 0.15);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アステカ神話 地域別神魔図鑑 - Aztec Mythology Atlas</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Cinzel & Noto Serif JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Noto+Serif+JP:wght@400;600;700;900&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS for Real Interactive Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Georgia', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            background-color: var(--panel-bg);
-            border-bottom: 2px solid var(--border-color);
-            padding: 12px 20px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            z-index: 10;
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            letter-spacing: 2px;
-            color: var(--accent-dark);
-            margin-bottom: 4px;
-        }
-
-        header p {
-            font-size: 0.85rem;
-            color: #7a6a53;
-        }
-
-        #app-container {
-            display: flex;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 地図エリア */
-        #map-container {
-            flex: 1;
-            height: 100%;
-            cursor: grab;
-            overflow: hidden;
-            position: relative;
-            background-color: #f2ebd9;
-            background-image: radial-gradient(#e3d7bf 1px, transparent 0);
-            background-size: 24px 24px;
-        }
-
-        #map-container:active {
-            cursor: grabbing;
-        }
-
-        #map-viewport {
-            transform-origin: 0 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 1200px;
-            height: 1000px;
-            transition: transform 0.1s ease-out;
-        }
-
-        /* SVG 古地図スタイル */
-        svg.ancient-map {
-            width: 100%;
-            height: 100%;
-            filter: sepia(0.2);
-        }
-
-        .region-polygon {
-            fill: #e8dbbe;
-            stroke: var(--accent-color);
-            stroke-width: 2;
-            stroke-dasharray: 6 3;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .region-polygon:hover {
-            fill: var(--highlight-color);
-            fill-opacity: 0.4;
-            stroke-width: 3;
-        }
-
-        .region-polygon.active {
-            fill: var(--highlight-color);
-            fill-opacity: 0.6;
-            stroke: var(--accent-dark);
-            stroke-width: 3;
-            stroke-dasharray: none;
-        }
-
-        .region-label {
-            font-family: 'Georgia', serif;
-            font-weight: bold;
-            font-size: 16px;
-            fill: var(--accent-dark);
-            pointer-events: none;
-            text-anchor: middle;
-            letter-spacing: 1px;
-        }
-
-        /* マップ コントロール */
-        .map-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 5;
-        }
-
-        .map-btn {
-            width: 36px;
-            height: 36px;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            color: var(--accent-dark);
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-
-        .map-btn:hover {
-            background: var(--highlight-color);
-            color: #fff;
-        }
-
-        /* 詳細パネル */
-        #detail-panel {
-            width: 450px;
-            background-color: var(--panel-bg);
-            border-left: 2px solid var(--border-color);
-            box-shadow: -4px 0 12px rgba(0,0,0,0.08);
-            display: flex;
-            flex-direction: column;
-            z-index: 5;
-            transition: transform 0.3s ease;
-        }
-
-        .panel-header {
-            padding: 16px 20px;
-            background-color: #eadeca;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .panel-header h2 {
-            font-size: 1.3rem;
-            color: var(--accent-dark);
-            margin-bottom: 8px;
-        }
-
-        /* タブ切替 */
-        .tab-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 8px;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            font-family: inherit;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px 4px 0 0;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background-color: var(--card-bg);
-            border-bottom: 2px solid var(--accent-color);
-            color: var(--accent-dark);
-        }
-
-        .panel-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        .item-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-            position: relative;
-        }
-
-        .item-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--accent-color);
-        }
-
-        .item-title {
-            font-size: 1.1rem;
-            color: var(--accent-dark);
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-        }
-
-        .item-location {
-            font-size: 0.8rem;
-            color: #8c7355;
-            font-style: italic;
-            margin-bottom: 8px;
-            border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 4px;
-        }
-
-        .item-section {
-            margin-top: 8px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        .item-section-title {
-            font-weight: bold;
-            color: var(--accent-color);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 6px;
-        }
-
-        /* 参考文献フッター */
-        footer {
-            background-color: var(--panel-bg);
-            border-top: 1px solid var(--border-color);
-            padding: 10px 20px;
-            font-size: 0.75rem;
-            color: #6e5e48;
-            max-height: 100px;
-            overflow-y: auto;
-        }
-
-        footer summary {
-            cursor: pointer;
-            font-weight: bold;
-            color: var(--accent-dark);
-        }
-
-        footer ul {
-            margin-top: 5px;
-            margin-left: 20px;
-        }
-
-        /* レスポンシブ対応 */
-        @media (max-width: 768px) {
-            #app-container {
-                flex-direction: column;
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            aztec: {
+              beige: '#F5F2EB',
+              cream: '#FAF8F3',
+              paper: '#FDFBF7',
+              sand: '#E8E2D5',
+              border: '#D9D0C1',
+              gold: '#C59B27',
+              goldHover: '#A6801C',
+              goldLight: '#FDF7E7',
+              dark: '#2C261E',
+              brown: '#5A4D3B',
+              red: '#9E2A2B',
+              redLight: '#FDF0F0'
             }
-            #detail-panel {
-                width: 100%;
-                height: 50vh;
-            }
+          },
+          fontFamily: {
+            serif: ['Noto Serif JP', 'serif'],
+            cinzel: ['Cinzel', 'serif']
+          }
         }
-    </style>
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F5F2EB;
+      color: #2C261E;
+      font-family: 'Noto Serif JP', serif;
+      background-image: radial-gradient(#E8E2D5 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F5F2EB;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #C59B27;
+      border-radius: 3px;
+    }
+    .aztec-pattern {
+      background-color: #FAF8F3;
+      border: 2px solid #D9D0C1;
+      box-shadow: 0 4px 20px -2px rgba(90, 77, 59, 0.08);
+    }
+    /* Leaflet map frame custom styling */
+    .leaflet-container {
+      background-color: #E8E2D5 !important;
+      font-family: 'Noto Serif JP', serif !important;
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-full flex flex-col">
 
-    <header>
-        <h1>古地図で巡る北アメリカ先住民の伝承</h1>
-        <p>地図上の各地域を選択して、伝承される神々や怪物の詳細を閲覧できます</p>
-    </header>
+  <!-- Navigation Header -->
+  <header class="sticky top-0 z-40 bg-aztec-paper/95 backdrop-blur-md border-b-2 border-aztec-gold/40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-aztec-gold/20 border-2 border-aztec-gold flex items-center justify-center text-aztec-gold text-xl font-bold">
+          ☀️
+        </div>
+        <div>
+          <h1 class="font-cinzel text-xl sm:text-2xl font-black tracking-wider text-aztec-dark">AZTEC MYTHOLOGY</h1>
+          <p class="text-xs text-aztec-brown font-semibold tracking-widest">アステカ神話 地域別神魔図鑑</p>
+        </div>
+      </div>
 
-    <div id="app-container">
-        <!-- マップエリア -->
-        <div id="map-container">
-            <div id="map-viewport">
-                <svg class="ancient-map" viewBox="0 0 1200 1000" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <!-- パターンとフィルター -->
-                        <pattern id="sea-texture" width="40" height="40" patternUnits="userSpaceOnUse">
-                            <path d="M 0 20 Q 10 15, 20 20 T 40 20" fill="none" stroke="#dcd0b8" stroke-width="1"/>
-                        </pattern>
-                        <filter id="paper-effect">
-                            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise"/>
-                            <feDiffuseLighting in="noise" lighting-color="#fff8e7" surfaceScale="2" result="light">
-                                <feDistantLight azimuth="60" elevation="50"/>
-                            </feDiffuseLighting>
-                            <feComponentTransfer>
-                                <feFuncR type="linear" slope="0.9"/>
-                                <feFuncG type="linear" slope="0.85"/>
-                                <feFuncB type="linear" slope="0.75"/>
-                            </feComponentTransfer>
-                            <feBlend mode="multiply" in="SourceGraphic" result="blend"/>
-                        </filter>
-                    </defs>
+      <!-- Quick Search & Counters -->
+      <div class="flex items-center gap-3 flex-1 max-w-md">
+        <div class="relative w-full">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-aztec-brown/60 text-sm"></i>
+          <input type="text" id="searchInput" placeholder="神・魔獣名やキーワードで検索..." 
+                 class="w-full pl-9 pr-4 py-2 bg-aztec-cream border border-aztec-border rounded-lg text-sm text-aztec-dark placeholder-aztec-brown/50 focus:outline-none focus:border-aztec-gold focus:ring-1 focus:ring-aztec-gold transition">
+        </div>
+      </div>
+    </div>
+  </header>
 
-                    <!-- 海洋の背景 -->
-                    <rect width="100%" height="100%" fill="#efe6d3"/>
-                    <rect width="100%" height="100%" fill="url(#sea-texture)" opacity="0.6"/>
+  <!-- Main Hero Banner -->
+  <section class="bg-gradient-to-b from-aztec-cream to-aztec-beige border-b border-aztec-border py-8 px-4 text-center">
+    <div class="max-w-4xl mx-auto space-y-3">
+      <span class="inline-block px-3 py-1 bg-aztec-goldLight border border-aztec-gold/30 rounded-full text-xs font-bold text-aztec-gold text-amber-800">
+        メソアメリカ古代宇宙観と現実の聖地
+      </span>
+      <h2 class="text-2xl sm:text-4xl font-bold text-aztec-dark font-cinzel">The Aztec Pantheon & Mythical Realms</h2>
+      <p class="text-sm sm:text-base text-aztec-brown leading-relaxed max-w-2xl mx-auto">
+        アステカ神話における「神」と「魔獣・邪神」は表裏一体の調和と混沌の存在です。現実の伝承地域・古代都市と結びつく4つの領域に分類し、合計80体の神魔をインタラクティブマップと共に解説します。
+      </p>
+    </div>
+  </section>
 
-                    <!-- 古地図風 装飾線・羅針盤 -->
-                    <g stroke="#c8b89a" stroke-width="0.5" opacity="0.5">
-                        <line x1="600" y1="0" x2="600" y2="1000"/>
-                        <line x1="0" y1="500" x2="1200" y2="500"/>
-                        <circle cx="200" cy="250" r="150" fill="none"/>
-                        <circle cx="200" cy="250" r="152" fill="none" stroke-dasharray="2 4"/>
-                        <path d="M 200 80 L 200 420 M 30 250 L 370 250"/>
-                    </g>
-                    <!-- 羅針盤本体 -->
-                    <g transform="translate(200, 250)" fill="#8c6d3b" opacity="0.4">
-                        <polygon points="0,-60 10,-10 60,0 10,10 0,60 -10,10 -60,0 -10,-10"/>
-                        <text x="0" y="-70" font-family="serif" font-size="14" text-anchor="middle" font-weight="bold">N</text>
-                    </g>
+  <!-- Region Selector Navigation -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 z-10 relative">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4" id="regionTabs">
+      <!-- Region Buttons Injected via JavaScript -->
+    </div>
+  </section>
 
-                    <!-- 地域ポリゴン (古地図イラスト風) -->
-                    <!-- 1. アメリカ合衆国 (USA) -->
-                    <g id="region-usa" class="region-group" onclick="selectRegion('usa')">
-                        <polygon class="region-polygon" points="300,350 450,320 650,340 850,330 880,480 820,550 650,560 400,580 250,480" />
-                        <text x="560" y="450" class="region-label">アメリカ合衆国<tspan x="560" dy="20" font-size="12">(USA)</tspan></text>
-                    </g>
-
-                    <!-- 2. カナダ (Canada) -->
-                    <g id="region-canada" class="region-group" onclick="selectRegion('canada')">
-                        <polygon class="region-polygon" points="200,150 400,120 700,100 900,150 850,320 650,330 450,310 280,330" />
-                        <text x="550" y="220" class="region-label">カナダ<tspan x="550" dy="20" font-size="12">(Canada)</tspan></text>
-                    </g>
-
-                    <!-- 3. メキシコ (Mexico) -->
-                    <g id="region-mexico" class="region-group" onclick="selectRegion('mexico')">
-                        <polygon class="region-polygon" points="320,590 450,580 620,570 700,650 650,750 500,720 380,680" />
-                        <text x="500" y="660" class="region-label">メキシコ<tspan x="500" dy="20" font-size="12">(Mexico)</tspan></text>
-                    </g>
-
-                    <!-- 4. カリブ海 (Caribbean) -->
-                    <g id="region-caribbean" class="region-group" onclick="selectRegion('caribbean')">
-                        <polygon class="region-polygon" points="720,620 850,600 980,650 950,750 800,780 700,700" />
-                        <text x="830" y="690" class="region-label">カリブ海<tspan x="830" dy="20" font-size="12">(Caribbean)</tspan></text>
-                    </g>
-
-                    <!-- 地図上の波・装飾イラスト -->
-                    <path d="M 900 400 Q 920 390, 940 400" stroke="#a89878" stroke-width="1.5" fill="none"/>
-                    <path d="M 930 420 Q 950 410, 970 420" stroke="#a89878" stroke-width="1.5" fill="none"/>
-                    <path d="M 150 650 Q 180 630, 210 650" stroke="#a89878" stroke-width="1.5" fill="none"/>
-
-                    <!-- 地名ラベル装飾 -->
-                    <text x="100" y="900" font-family="Georgia, serif" font-size="28" fill="#8c6d3b" opacity="0.3" font-style="italic">TERRA INCOGNITA</text>
-                </svg>
-            </div>
-
-            <!-- マップ移動・ズームボタン -->
-            <div class="map-controls">
-                <button class="map-btn" onclick="zoom(1.2)">+</button>
-                <button class="map-btn" onclick="zoom(0.8)">-</button>
-                <button class="map-btn" onclick="resetMap()">⟲</button>
-            </div>
+  <!-- Active Region Banner & Map Section -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-8">
+    
+    <!-- Active Region Info Card -->
+    <div class="aztec-pattern rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+      <div class="flex flex-col lg:flex-row gap-6 items-start justify-between">
+        <div class="space-y-3 flex-1">
+          <div class="flex items-center gap-2">
+            <span id="regionNumber" class="text-xs font-bold font-cinzel px-2.5 py-0.5 rounded bg-aztec-gold text-white">REGION I</span>
+            <span id="regionCoords" class="text-xs text-aztec-brown/80 font-mono"><i class="fa-solid fa-location-dot text-aztec-red mr-1"></i>19.4326° N, 99.1332° W</span>
+          </div>
+          <h2 id="regionTitle" class="text-2xl sm:text-3xl font-bold text-aztec-dark">中央・メキシコ盆地</h2>
+          <p id="regionSubtitle" class="text-sm font-semibold text-aztec-gold">首都テノチティトラン（現メキシコシティ）／湖水地帯</p>
+          <p id="regionDesc" class="text-sm text-aztec-brown leading-relaxed">
+            アステカ（メシカ族）が帝国を築いた政治・宗教の中心地。自民族の優位性を証明する太陽信仰と、テスココ湖をはじめとする湖沼環境に根ざした信仰が集中しています。
+          </p>
         </div>
 
-        <!-- 情報表示パネル -->
-        <div id="detail-panel">
-            <div class="panel-header">
-                <h2 id="region-title">地域を選択してください</h2>
-                <div class="tab-container">
-                    <button id="tab-monsters" class="tab-btn active" onclick="switchTab('monsters')">怪物 (<span id="count-monsters">0</span>)</button>
-                    <button id="tab-gods" class="tab-btn" onclick="switchTab('gods')">神々 (<span id="count-gods">0</span>)</button>
-                </div>
-            </div>
-            <div id="panel-content" class="panel-content">
-                <p style="color: #7a6a53; text-align: center; margin-top: 40px;">地図上の地域（アメリカ合衆国、カナダ、メキシコ、カリブ海）をクリック・タップすると、伝承の詳細が表示されます。</p>
-            </div>
+        <!-- Filter Controls for Entities -->
+        <div class="flex flex-wrap lg:flex-col gap-2 w-full lg:w-auto shrink-0 justify-end">
+          <button id="filterAll" onclick="setEntityFilter('all')" class="filter-btn active px-4 py-2 text-xs font-bold rounded-lg border border-aztec-gold bg-aztec-gold text-white shadow-sm transition">
+            すべて表示 (<span id="countAll">20</span>)
+          </button>
+          <button id="filterGods" onclick="setEntityFilter('god')" class="filter-btn px-4 py-2 text-xs font-bold rounded-lg border border-aztec-border bg-aztec-cream text-aztec-dark hover:bg-aztec-goldLight transition">
+            <i class="fa-solid fa-sun text-amber-600 mr-1.5"></i>神々 (<span id="countGods">10</span>)
+          </button>
+          <button id="filterEvils" onclick="setEntityFilter('evil')" class="filter-btn px-4 py-2 text-xs font-bold rounded-lg border border-aztec-border bg-aztec-cream text-aztec-dark hover:bg-aztec-redLight transition">
+            <i class="fa-solid fa-skull text-aztec-red mr-1.5"></i>邪神・魔獣 (<span id="countEvils">10</span>)
+          </button>
         </div>
+      </div>
+
+      <!-- Map Block -->
+      <div class="mt-6 pt-6 border-t border-aztec-border/60">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-aztec-dark flex items-center gap-2">
+            <i class="fa-solid fa-map-location-dot text-aztec-gold"></i>
+            伝承地域・古代遺跡マップ (Google Maps / OpenStreetMap Data)
+          </h3>
+          <span class="text-xs text-aztec-brown italic">ピンをクリックすると聖地・都市名を表示</span>
+        </div>
+        <div id="mapContainer" class="w-full h-64 sm:h-80 rounded-xl border-2 border-aztec-border shadow-inner z-0"></div>
+      </div>
     </div>
 
-    <!-- 参考文献フッター -->
-    <footer>
-        <details>
-            <summary>参考文献・出典</summary>
-            <ul>
-                <li>Sam D. Gill, Irene F. Sullivan、『Dictionary of Native American Mythology』、1994年</li>
-                <li>阿部珠理、『アメリカ先住民の神話と伝承』、2010年</li>
-                <li>David Bowles、『Feathered Serpent, Dark Heart of Sky: Myths of Mexico』、2018年</li>
-                <li>Encyclopædia Britannica、「Mythologies of the Indigenous peoples of the Americas」、2024年</li>
-                <li>Godchecker、「Native American Mythology Pantheon」、2023年</li>
-            </ul>
-        </details>
-    </footer>
+    <!-- Entity Grid List -->
+    <section>
+      <div class="flex items-center justify-between mb-6">
+        <h3 id="sectionHeaderTitle" class="text-xl font-bold text-aztec-dark flex items-center gap-2">
+          <span class="w-2 h-6 bg-aztec-gold rounded-full"></span>
+          収録された神・魔獣一覧
+        </h3>
+        <p class="text-xs text-aztec-brown">カードをクリック・タップすると詳細情報を展開</p>
+      </div>
 
-    <script>
-        // 伝承データ構造
-        const mythologyData = {
-            usa: {
-                name: "アメリカ合衆国 (USA)",
-                monsters: [
-                    { name: "ウェンディゴ (Wendigo)", location: "アメリカ合衆国（北部・五大湖周辺）", desc: "人間を襲って貪り喰う、氷のように冷たく異常に痩せた巨人の怪物。", origin: "極度の飢餓や欲望に負けて人肉を口にした人間が呪われ、悪霊に取り憑かれて変貌した。" },
-                    { name: "スキンウォーカー (Skinwalker)", location: "アメリカ合衆国（南西部・ナバホ居留区）", desc: "動物の皮を被ることでその姿に変身し、人々に病や恐怖をもたらす悪の術師。", origin: "禁忌とされる闇の魔術を学び、肉親を犠牲にするなどの儀式を経て変貌した。" },
-                    { name: "フライング・ヘッド (Flying Head)", location: "アメリカ合衆国（北東部・イロコイ伝承）", desc: "口から炎を吹き、絡み合った長い髪と鋭い牙を持つ巨大な生首の怪物。", origin: "飢饉の際に殺害された長老たちの首が怨念によって合体・肥大化した。" },
-                    { name: "ウンテナ (Uktena)", location: "アメリカ合衆国（南東部・チェロキー伝承）", desc: "額に輝く結晶を持ち、強力な毒と視線で人を死に至らしめる巨大な角付き蛇。", origin: "太陽の女神を殺害するために神々によって作られたが、任務に失敗し怪物化した。" },
-                    { name: "オンセギラ (Uncegila)", location: "アメリカ合衆国（グレートプレーンズ・ラコタ伝承）", desc: "土地を荒らし、触れた者を粘液で溶かす巨大な龍状の水魔。", origin: "太古の混沌の時代に原初の大地から自然発生した闇の存在。" },
-                    { name: "ウィシュプッシュ (Wishpoosh)", location: "アメリカ合衆国（太平洋西北部・チヌーク伝承）", desc: "鋭い爪を持ち、川の水量を自在に操作して人を溺れさせる巨大なビーバーの怪物。", origin: "太古の時代、怪物たちが世界を支配していた頃に自然界の巨大な力から生まれた。" },
-                    { name: "ピアサ・バード (Piasa Bird)", location: "アメリカ合衆国（中西部・イリノイ伝承）", desc: "鹿の角、赤い目、人の顔、ウロコに覆われた体を持つ鳥型の怪物。", origin: "ミシシッピ川沿いの崖の洞窟に太古から生息していた悪霊の化身。" },
-                    { name: "イヤ (Iya)", location: "アメリカ合衆国（中北部・ラコタ伝承）", desc: "村全体や人間を丸呑みにする暴食を司る巨大な嵐の怪物。", origin: "邪悪な悪霊ロッカの悪意と負のエネルギーから誕生した。" },
-                    { name: "チェフェロ (Chenoo)", location: "アメリカ合衆国（北東部・ミクマク伝承）", desc: "心臓が氷でできており、恐ろしい叫び声で人を狂わせる喰人巨人。", origin: "大変な恐怖や背徳的行為によって、人間の心臓が凍りついて怪物化した。" },
-                    { name: "アポタムキン (Apotamkin)", location: "アメリカ合衆国（北東部・パサマクディ伝承）", desc: "長い赤髪と巨大な牙を持ち、水辺に近づく人間を引きずり込む海の蛇型怪物。", origin: "人間が禁忌を破って水辺の魔力に触れたことで変貌した。" }
-                ],
-                gods: [
-                    { name: "ワカン・タンカ (Wakan Tanka)", location: "アメリカ合衆国（グレートプレーンズ・ラコタ伝承）", desc: "万物に宿る不可不思議な力であり、宇宙と生命を包括するグレート・スピリット（偉大なる霊）。", origin: "始めも終わりもなく、宇宙の始まりから自立して存在する原初神。" },
-                    { name: "ココペリ (Kokopelli)", location: "アメリカ合衆国（南西部・ホピ/ズニ伝承）", desc: "笛を吹き、背中に種を担いで豊作と子宝をもたらす精霊・神。", origin: "大地と太陽の交わりの中から、生命の循環を促すために誕生した。" },
-                    { name: "ホワイト・バッファロー・カーフ・ウーマン", location: "アメリカ合衆国（グレートプレーンズ・ラコタ伝承）", desc: "人々に聖なるパイプと正しい生き方、儀式を授けた平和の女神。", origin: "飢餓に苦しむ人々を救うため、ワカン・タンカの使者として聖なる白いバッファローから変化して現れた。" },
-                    { name: "スパイダー・ウーマン (Spider Woman)", location: "アメリカ合衆国（南西部・ホピ/ナバホ伝承）", desc: "地球と人間を創造し、織物や生活の知恵を教えた知識の女神。", origin: "太陽神タワの意志を受け、大地の物質から思考によって自らを誕生させた。" },
-                    { name: "ツィチテナコ (Tsichtinako)", location: "アメリカ合衆国（南西部・アコマ・プエブロ伝承）", desc: "宇宙の創造主であり、思考することによってすべての万物を生み出す思考の女神。", origin: "原初の暗闇（地下世界）の中に存在した意識そのものから発生した。" },
-                    { name: "チェンジング・ウーマン (Changing Woman)", location: "アメリカ合衆国（南西部・ナバホ伝承）", desc: "四季の移り変わりや自然の再生を象徴し、人間を創造した女神。", origin: "第一の男と第一の女によって、聖なる山で発見され育てられた。" },
-                    { name: "ティラワ (Tirawa)", location: "アメリカ合衆国（中北部・ポーニー伝承）", desc: "天空の最高神であり、星々に命を与えて地上を管理させる創造主。", origin: "宇宙の虚無の中に最初に存在し、自らの意志で天体と世界を創造した。" },
-                    { name: "ヘノ (Hino / Hinu)", location: "アメリカ合衆国（北東部・イロコイ伝承）", desc: "恵みの雨を降らせ、邪悪な蛇の化け物を雷で退治する雷神。", origin: "偉大なる精神ハグウェディユが世界を整える際に空の守護者として生み出した。" },
-                    { name: "グルスカップ (Gluskap)", location: "アメリカ合衆国（北東部・アベナキ伝承）", desc: "人間を怪物から守り、景観を作り整えた文化英雄・人間保護神。", origin: "母なる大地の生誕時に、善良な心を持って自力で生まれてきた。" },
-                    { name: "ガオ (Gaoh)", location: "アメリカ合衆国（北東部・イロコイ伝承）", desc: "四方の風を巨大な洞窟に繋ぎ止め、天候を制御する風の神。", origin: "世界の秩序を保つために最高神によって配属された風の統制者。" }
-                ]
-            },
-            canada: {
-                name: "カナダ (Canada)",
-                monsters: [
-                    { name: "アマロック (Amarok)", location: "カナダ（北極圏・イヌイット伝承）", desc: "夜間に一人で狩りをする愚かな人間を襲って食い殺す巨大な狼の怪物。", origin: "大自然の掟を破る人間を淘汰・罰するために神々によって生み出された。" },
-                    { name: "クイパルーク (Qalupalik)", location: "カナダ（北極圏・イヌイット伝承）", desc: "緑色の皮膚と長い爪を持ち、氷の割れ目から子供をさらって背中のアマルティに詰める水妖。", origin: "危険な氷上に近づく子供たちへの警告として、海の深い闇から生まれた。" },
-                    { name: "シシウトル (Sisiutl)", location: "カナダ（西海岸・クワクワカワク伝承）", desc: "中央に人間の顔、両端に蛇の頭を持つ双頭の海蛇。見つめた者を石に変える。", origin: "超自然的な力と海の魔力が実体化して誕生した。" },
-                    { name: "マハハ (Mahaahaa)", location: "カナダ（北極圏・イヌイット伝承）", desc: "落ちくぼんだ目と痩せた体を持ち、鋭い爪で人間をくすぐり倒して凍死させる悪魔。", origin: "北極の苛酷な冷気と孤独から発生した不気味な精神体。" },
-                    { name: "イクパルポク (Ijiraq)", location: "カナダ（北極圏・イヌイット伝承）", desc: "人間や動物に姿を変え、旅人を幻惑して永久に迷子にさせる姿を変える怪物。", origin: "蜃気楼や吹雪による迷妄の現象が形をとって怪物化した。" },
-                    { name: "ケーカン (Kukwes)", location: "カナダ（東部・ミクマク伝承）", desc: "毛深く巨大で、猛烈な力で人間を捕食する森の巨人。", origin: "太古の森の鬱蒼とした闇と荒々しい自然の象徴として生まれた。" },
-                    { name: "トゥピラク (Tupilaq)", location: "カナダ（北極圏・イヌイット伝承）", desc: "呪術師が動物の骨や皮膚を繋ぎ合わせて作り出す、敵を殺害するためのキメラ怪物。", origin: "シャーマンが禁断の秘術の儀式によって人工的に創造した。" },
-                    { name: "アキイイニ (Ahkiyyini)", location: "カナダ（北極圏・イヌイット伝承）", desc: "自分の腕の骨をバチにして肋骨を叩き、強烈な地震を起こして人を死に追いやる骸骨の悪霊。", origin: "無念の死を遂げた人間の死霊が怨念により変貌した。" },
-                    { name: "メメグウェシ (Memegwesi)", location: "カナダ（中部・オジブウェ伝承）", desc: "毛深く顔が非常に狭い小人。川の崖に住み、旅人の舟を転覆させる。", origin: "人間より前に世界に存在していた、大地の隙間に残された原初種族。" },
-                    { name: "タリアクスニク (Tariaksuq)", location: "カナダ（北極圏・イヌイット伝承）", desc: "影しか見えず、人間が直接目視しようとすると消えてしまう影の怪物。", origin: "現実世界と霊界の境目にある異次元の歪みから生じた。" }
-                ],
-                gods: [
-                    { name: "セドナ (Sedna)", location: "カナダ（北極圏・イヌイット伝承）", desc: "海底に住み、海のアザラシやクジラなどの海洋生物を統括する海の女神。", origin: "人間の少女だったが、海に突き落とされ、切られた指が海の動物になり自身は海の主となった。" },
-                    { name: "レイヴン (Raven / ワタリガラス)", location: "カナダ（西海岸・ハイダ/トリンギット伝承）", desc: "太陽や火を盗んで人間に与えたトリックスターであり、世界を整えた創造神。", origin: "原初の暗闇の中で、自らの知恵と好奇心によって発生した。" },
-                    { name: "ナナボーゾ (Nanabozho)", location: "カナダ（東部/中部・オジブウェ伝承）", desc: "人間に薬草や医学、文字を教えたウサギの姿をとる文化英雄神。", origin: "大地の精霊（母）と西風の神（父）の間に誕生した。" },
-                    { name: "イガルク (Igaluk)", location: "カナダ（北極圏・イヌイット伝承）", desc: "太陽神である妹を追いかけて空を巡り、潮の満ち引きを司る月の神。", origin: "人間界の出来事から空へ逃れ、月としての神格を得た。" },
-                    { name: "マリカ (Malina)", location: "カナダ（北極圏・イヌイット伝承）", desc: "月神である兄から逃れるために松明を持って空へ登り、世界を照らす太陽の女神。", origin: "人間界での事件をきっかけに空へと駆け昇り、太陽の光となった。" },
-                    { name: "ギッチ・マニトゥ (Gitche Manitou)", location: "カナダ（東部・アルゴンキン伝承）", desc: "万物の創造主であり、すべての生命に宿る偉大な精霊の源泉。", origin: "時間以前の無から、自らの思考によって自らを存在させた。" },
-                    { name: "クルスカップ (Kluskap)", location: "カナダ（東部・ミクマク伝承）", desc: "巨人を退治し、土地を人が住みやすいように作り替えた慈悲深い創造神。", origin: "稲妻が大気を打った際、土から形作られて誕生した。" },
-                    { name: "トルンガスック (Torngarsak)", location: "カナダ（北極圏・イヌイット伝承）", desc: "シャーマンたちに力を与え、健康や狩猟の成否を司る最高峰の強力な精霊。", origin: "自然界のすべてのスピリチュアルなエネルギーが凝縮して成立した。" },
-                    { name: "ツェラホン (Dzelarhons)", location: "カナダ（西海岸・ハイダ伝承）", desc: "火山や蛙、自然の法則に対する敬意を司る大地の守護女神。", origin: "礼儀を忘れた人々に立腹した地球の意志が、一人の女性の姿をとって顕現した。" },
-                    { name: "テケイツェルトク (Tekkeitsertok)", location: "カナダ（北極圏・イヌイット伝承）", desc: "カリブー（トナカイ）や狩猟、土地の肥沃さを司る大地の神。", origin: "人間の生存に必要な肉と皮を供給するため、北方の大地から発生した。" }
-                ]
-            },
-            mexico: {
-                name: "メキシコ (Mexico)",
-                monsters: [
-                    { name: "シパクトリ (Cipactli)", location: "メキシコ（中央高地・アステカ伝承）", desc: "すべての関節に口を持つ、貪欲で巨大なワニとカエルが合体したような原初怪物。", origin: "世界の創造以前、原初の渾沌の海に浮かんでいた唯一の生命体。" },
-                    { name: "アウィゾトル (Ahuizotl)", location: "メキシコ（中央高地・アステカ伝承）", desc: "尻尾の先に人間の手があり、人の泣き真似で誘い出して水中に引きずり込む犬状の怪物。", origin: "水神トラロックの使いであり、魂を聖域へ送る者として生み出された。" },
-                    { name: "ナワール (Nahual)", location: "メキシコ全域（マヤ/アステカ伝承）", desc: "夜間にジャガーや大きな犬に姿を変え、家畜を襲ったり呪いをかける変身怪物。", origin: "生まれた日の持つ霊力と、闇の呪術を修めた者が変化する。" },
-                    { name: "カマソッツ (Camazotz)", location: "メキシコ南部（マヤ伝承）", desc: "鋭いナイフのような鼻を持ち、首を切り落とす地下世界の殺人コウモリ。", origin: "地下世界シバルバーの暗黒と死の気配から発生した。" },
-                    { name: "シウコアトル (Xiuhcoatl)", location: "メキシコ（中央高地・アステカ伝承）", desc: "口から凄まじい炎を噴き出す、灼熱の火の蛇。", origin: "太陽神ウィツィロポチトリが誕生した際、武器として自らの手で誕生させた。" },
-                    { name: "ツィツィミトル (Tzitzimitl)", location: "メキシコ（中央高地・アステカ伝承）", desc: "日食の際や世界終末の日に空から降ってくる星の骸骨悪魔。", origin: "太陽が滅びた時の暗黒空間から生み出された存在。" },
-                    { name: "クカカン (Cucuy)", location: "メキシコ全域", desc: "暗闇に潜み、言い付けを守らない子供を袋に詰めて連れ去る影の怪物。", origin: "伝承上の恐怖心と子供を戒めるための古代からの教えが具現化した。" },
-                    { name: "トリコアトル (Tlilcoatl)", location: "メキシコ（中央高地・アステカ伝承）", desc: "太い黒蛇で、二股の尻尾を相手の鼻穴に突き刺して窒息死させる恐怖の蛇。", origin: "湖や湿地帯の暗部で長年生き抜いた大蛇が魔力を得た。" },
-                    { name: "シバルバーの使者 (Xibalban demon)", location: "メキシコ南部（マヤ伝承）", desc: "病気や苦痛を人間にまき散らす、腐敗した死体の姿をした地下世界の使者。", origin: "死と病気、腐敗の概念が地下の王たちの手によって実体化された。" },
-                    { name: "ヨワルテプツトリ (Youaltepuztli)", location: "メキシコ（中央高地・アステカ伝承）", desc: "胸が叩き割れており、胸を打つ音が斧で木を切る音のように響く首なし死体の怪物。", origin: "夜の神テスカトリポカが人間を試すための試練として出現させる化身。" }
-                ],
-                gods: [
-                    { name: "ケツァルコアトル (Quetzalcoatl)", location: "メキシコ（中央高地・アステカ伝承）", desc: "風、知恵、文化、農耕を司る羽毛ある蛇の神。人間にトウモロコシを与えた。", origin: "原初神オメテオトルの四男として宇宙の開闢時に誕生した。" },
-                    { name: "テスカトリポカ (Tezcatlipoca)", location: "メキシコ（中央高地・アステカ伝承）", desc: "夜の空、煙る鏡、魔法、運命を司る全能の神。", origin: "原初神オメテオトルから直接生み出された息子の神の一柱。" },
-                    { name: "トラロック (Tlaloc)", location: "メキシコ（中央高地・アステカ伝承）", desc: "恵みの雨をもたらす一方で、雷や干ばつの猛威も振るう雨神。", origin: "世界創造の初めに大地と空が分離された際、自然の水分から発生した。" },
-                    { name: "ウィツィロポチトリ (Huitzilopochtli)", location: "メキシコ（中央高地・アステカ伝承）", desc: "太陽と戦争を司るアステカの守護神。", origin: "母神コアトリクエが空から降ってきた美しい羽毛を懐に入れたことで妊娠・誕生した。" },
-                    { name: "ククルカン (Kukulkan)", location: "メキシコ（ユカタン半島・マヤ伝承）", desc: "風や水、輪廻転生を象徴する羽毛ある蛇。", origin: "宇宙の調和と生命の息吹から生み出された。" },
-                    { name: "チャック (Chaac)", location: "メキシコ（ユカタン半島・マヤ伝承）", desc: "斧を使って雲を叩き、雷と雨を降らせる雨と農業の神。", origin: "方角（東西南北）の象徴と結びついて世界の四隅から発生した。" },
-                    { name: "コアトリクエ (Coatlicue)", location: "メキシコ（中央高地・アステカ伝承）", desc: "蛇のスカートを穿き、生と死、大地を象徴する偉大な母神。", origin: "大地そのものの化身として、世界の成立とともに顕現した。" },
-                    { name: "イシュチェル (Ixchel)", location: "メキシコ（マヤ伝承）", desc: "月、医療、妊娠、織物を司る多面的な女神。", origin: "太陽神イツァムナーの伴侶として、天界の光の中から出現した。" },
-                    { name: "シペ・トテック (Xipe Totec)", location: "メキシコ（アステカ伝承）", desc: "春の芽吹きと再生、貴金属細工を司る神。", origin: "トウモロコシの種が皮を破って発芽する自然現象の神格化。" },
-                    { name: "イツァムナー (Itzamna)", location: "メキシコ（マヤ伝承）", desc: "天空、昼と夜、知識や書物を司るマヤ最高神の一柱。", origin: "宇宙全体の意識が定着し、万物の支配者として存在した。" }
-                ]
-            },
-            caribbean: {
-                name: "カリブ海 (Caribbean Sea)",
-                monsters: [
-                    { name: "ルスカ (Lusca)", location: "カリブ海（バハマ周辺）", desc: "サメの頭部とタコの触手を持つ、青い洞窟（ブルーホール）に潜む海獣。", origin: "海底の深い闇と激しい潮流の恐怖から生まれた。" },
-                    { name: "スクイアン (Soucouyant)", location: "カリブ海諸島", desc: "昼間は老女だが、夜になると自分の皮膚を脱ぎ捨て、火の玉となって飛翔し血を吸う妖魔。", origin: "悪霊への誓約と闇の秘術によって人性が損なわれた。" },
-                    { name: "バクー (Bacoo)", location: "カリブ海沿岸部", desc: "ボトルの中に封印されている、人間に富をもたらすが凶暴化する小型の悪魔。", origin: "邪悪な術士が死者の魂と精霊を瓶の中に閉じ閉じ込めて精製した。" },
-                    { name: "ママン・ドロ (Mama Dlo)", location: "カリブ海諸島", desc: "上半身は美しく長い髪の女性、下半身は大蛇の姿をした川の怪物。", origin: "川の水源を人間から守るために大地の精霊から生まれた。" },
-                    { name: "ジュムビー (Jumbie)", location: "カリブ海全域（タイノおよび諸伝承）", desc: "人間を病や不吉に陥れる、特定の形を持たない邪悪な霊全般の総称。", origin: "悪意を持って死んだ者の魂や、供養されなかった死者から発生した。" },
-                    { name: "オピエル (Opiyel)", location: "カリブ海（タイノ伝承）", desc: "犬の姿をした死者の精霊。夜になると死者の魂を連れて彷徨う。", origin: "生者と死者の世界をつなぐ存在として神々によって作られた。" },
-                    { name: "シグアパ (Ciguapa)", location: "カリブ海（ドミニカ等・タイノ起源）", desc: "足首が前後逆についており、美しい髪で人を誘惑して森へ引きずり込む怪物。", origin: "山奥の深い自然が持つ「迷い」の力が女性の姿をとった。" },
-                    { name: "マポウリ (Mapouri)", location: "カリブ海諸島", desc: "樹木の幹に潜み、近づく者に病を感染させる悪霊。", origin: "木の樹液と古代の死者の情念が結合して生まれた。" },
-                    { name: "カランカン (Carancan)", location: "カリブ海沿岸", desc: "嵐の夜に船員を水中に引きずり込み、船を沈没させる巨大魚。", origin: "荒れ狂う海の波そのものが生命を得て生じた。" },
-                    { name: "ジュカン (Jucan)", location: "カリブ海（タイノ伝承）", desc: "地下洞窟に潜み、地震を引き起こして地表を陥没させる巨大な泥ミミズの怪物。", origin: "原初の大地がまだ柔らかかった時代に生まれた。" }
-                ],
-                gods: [
-                    { name: "ヨカフ (Yúcahu)", location: "カリブ海（タイノ伝承）", desc: "トウモロコシやキャッサバの豊作、海の恵みを司る恵みの神。", origin: "宇宙の母神アタベイの胎内から最初に生まれた。" },
-                    { name: "アタベイ (Atabey)", location: "カリブ海（タイノ伝承）", desc: "大地、淡水、生育、安産を司る偉大な母神（地球の化身）。", origin: "始まりの時代に宇宙の無の中から自然発生した最高母神。" },
-                    { name: "ジュラカン (Juracán)", location: "カリブ海（タイノ伝承）", desc: "破壊的な嵐や暴風雨（ハリケーンの語源）を巻き起こす怒りの神。", origin: "混乱と調和のバランスを保つため、混沌の気流から誕生した。" },
-                    { name: "グアバンセクス (Guabancex)", location: "カリブ海（タイノ伝承）", desc: "風と水害を支配し、ジュラカンとともに暴風を操る嵐の女神。", origin: "大気と天候の荒々しいエネルギーから発生した。" },
-                    { name: "ボイナイエル (Boinayel)", location: "カリブ海（タイノ伝承）", desc: "涙を流すことで地上に恵みの雨をもたらす雨の神。", origin: "人々の飢えを哀れみ、太陽と大地の隙間から生まれた。" },
-                    { name: "マロフ (Marohu)", location: "カリブ海（タイノ伝承）", desc: "晴天と澄んだ空を司る神（雨神ボイナイエルの双子の兄弟）。", origin: "雲が晴れ渡る空の現象からボイナイエルと同時に誕生した。" },
-                    { name: "マカウンタ (Maquetaurie Guayaba)", location: "カリブ海（タイノ伝承）", desc: "死者の国（コアイベイ）を統括し、夜の精霊たちを治める死の神。", origin: "最初に死んだ人間の魂が神格化され、死者の指導者となった。" },
-                    { name: "オピエル・グアビラン (Opiyelguabíran)", location: "カリブ海（タイノ伝承）", desc: "4本足の守護神。亡くなった人々の霊をあの世へ安全に導く神。", origin: "死者への慈悲のために創造神によって与えられた。" },
-                    { name: "イグアナボイナ (Iguanaboina)", location: "カリブ海（タイノ伝承）", desc: "良好な気候や恵みの風をもたらす、イグアナの姿をした天候神。", origin: "洞窟から生まれて空へ駆け登り、気候を司るようになった。" },
-                    { name: "バイナマ (Bainama)", location: "カリブ海（タイノ伝承）", desc: "植物の芽生えや作物の成長を保護する農業の神。", origin: "母神アタベイの祝福の光が土に注がれたことで誕生した。" }
-                ]
-            }
-        };
+      <!-- Grid Container -->
+      <div id="entityGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        <!-- Dynamically Filled -->
+      </div>
 
-        // アプリケーションの状態制御
-        let currentRegionKey = null;
-        let currentTab = 'monsters';
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden text-center py-12 aztec-pattern rounded-2xl">
+        <i class="fa-solid fa-compass text-4xl text-aztec-brown/40 mb-3"></i>
+        <p class="text-base font-bold text-aztec-dark">該当する神または魔獣が見つかりませんでした。</p>
+        <p class="text-xs text-aztec-brown mt-1">検索ワードを変更するか、フィルターをリセットしてください。</p>
+      </div>
+    </section>
 
-        // マップPan/Zoom（ドラッグ・拡大縮小）制御
-        const mapContainer = document.getElementById('map-container');
-        const viewport = document.getElementById('map-viewport');
-        let scale = 1;
-        let pointX = 0;
-        let pointY = 0;
-        let startX = 0;
-        let startY = 0;
-        let isDragging = false;
+  </main>
 
-        function updateTransform() {
-            viewport.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+  <!-- Entity Detail Modal -->
+  <div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-aztec-paper border-2 border-aztec-gold rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 sm:p-8 shadow-2xl relative transform scale-95 transition-transform duration-300" id="modalContent">
+      <button onclick="closeModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-aztec-sand text-aztec-dark hover:bg-aztec-gold hover:text-white flex items-center justify-center text-lg transition">
+        &times;
+      </button>
+      <div id="modalBody">
+        <!-- Content inserted dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer / Works Cited Section (Strict MLA Format) -->
+  <footer class="bg-aztec-dark text-aztec-sand border-t-4 border-aztec-gold mt-16 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto space-y-6">
+      
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-aztec-brown/40 pb-6">
+        <div>
+          <h3 class="font-cinzel text-lg font-bold text-aztec-gold">AZTEC MYTHOLOGY RESEARCH ATLAS</h3>
+          <p class="text-xs text-aztec-sand/70 mt-1">メソアメリカ宗教思想およびメシカ宇宙論における地域的分析文献データベース</p>
+        </div>
+        <div class="text-xs text-aztec-sand/60">
+          Last Updated: November 2026
+        </div>
+      </div>
+
+      <!-- MLA Works Cited Section -->
+      <div class="space-y-3">
+        <h4 class="font-cinzel text-sm font-bold tracking-widest text-aztec-gold uppercase">Works Cited (参考文献)</h4>
+        <div class="bg-black/20 border border-aztec-brown/50 rounded-xl p-4 sm:p-6 text-xs sm:text-sm text-aztec-sand/90 font-serif leading-relaxed">
+          <p class="pl-8 -indent-8">
+            Miller, Mary, and Karl Taube. <em>An Illustrated Dictionary of the Gods and Symbols of Ancient Mexico and the Maya</em>. Thames & Hudson, 1997.
+          </p>
+        </div>
+        <p class="text-[11px] text-aztec-sand/60 italic">
+          ※ 上記の参考文献は、アステカおよびメソアメリカ神話の神々、魔獣、地理的背景の記述に関する典拠に基づきMLA第8/9版形式で記載されています。
+        </p>
+      </div>
+
+      <div class="text-center pt-6 text-xs text-aztec-sand/50 border-t border-aztec-brown/30">
+        &copy; 2026 Aztec Mythology Geographical Research Atlas. Created for Educational & Cultural Interactive Exploration.
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Javascript Data & Application Logic -->
+  <script>
+    // -------------------------------------------------------------
+    // DATA STRUCTURE: 4 REGIONS (10 GODS + 10 EVIL ENTITIES EACH = 80 TOTAL)
+    // -------------------------------------------------------------
+    const regionsData = [
+      {
+        id: "region1",
+        num: "REGION I",
+        title: "中央・メキシコ盆地",
+        subtitle: "首都テノチティトラン（現メキシコシティ）／湖水地帯",
+        coords: "19.4326° N, 99.1332° W",
+        center: [19.4326, -99.1332],
+        zoom: 10,
+        desc: "アステカ（メシカ族）が帝国を築いた政治・宗教の中心地。自民族の優位性を証明する太陽信仰と、テスココ湖をはじめとする水辺の環境に根ざした信仰が集中しています。",
+        markers: [
+          { lat: 19.4326, lng: -99.1332, title: "テノチティトラン (Templo Mayor)" },
+          { lat: 19.4500, lng: -98.9000, title: "テスココ湖 (Lake Texcoco)" },
+          { lat: 19.2500, lng: -99.1000, title: "ソチミルコ (Xochimilco)" }
+        ],
+        gods: [
+          {
+            name: "ウィツィロポチトリ",
+            nahuatl: "Huitzilopochtli",
+            role: "太陽神・戦争神",
+            desc: "メシカ族の最重要守護神。毎朝、夜の星々の神々を退けて太陽を上らせるため、絶えず生贄の血を捧げられる戦士の神。テノチティトランの大神殿（テンプロ・マヨール）南側祭壇に祀られた。"
+          },
+          {
+            name: "トナティウ",
+            nahuatl: "Tonatiuh",
+            role: "第5の太陽の神",
+            desc: "現在世界（第5の太陽）を維持する強大な太陽神。自らの運行を続けるため、人間の心臓と血の糧を要求する。「アステカ・カレンダー」の中央に描かれる。"
+          },
+          {
+            name: "チャルチウトリクエ",
+            nahuatl: "Chalchiuhtlicue",
+            role: "湖・川・水の女神",
+            desc: "「翡翠のスカート」の名を持つ女神。テスココ湖をはじめとする湖水地帯の淡水や波、漁師を守護するが、時に大洪水を引き起こす。"
+          },
+          {
+            name: "コアトリクエ",
+            nahuatl: "Coatlicue",
+            role: "大地の母神",
+            desc: "「蛇のスカートを穿く者」。生と死の両面を司る大地神であり、ウィツィロポチトリや星々（センツォン・ウイツナワ）の母。"
+          },
+          {
+            name: "オポチトリ",
+            nahuatl: "Opochtli",
+            role: "狩猟・漁業の神",
+            desc: "テスココ湖の漁師や鳥採りたちの守護神。アトラトル（投槍器）や魚網、釣針を発明したとされる。"
+          },
+          {
+            name: "アトラウア",
+            nahuatl: "Atlaua",
+            role: "水域の保護神・弓術神",
+            desc: "水難事故を防ぎ、湿地帯での生活を守る古代の水神。矢筒を携えた姿で描かれる。"
+          },
+          {
+            name: "シウテクトリ",
+            nahuatl: "Xiuhtecuhtli",
+            role: "火と時間の旧神",
+            desc: "「トルコ石の主」。首都の中心祭壇で燃え続ける聖なる火の神。52年周期の改暦儀式（新火の儀式）の中核をなす。"
+          },
+          {
+            name: "パイナル",
+            nahuatl: "Paynal",
+            role: "迅速の使者神",
+            desc: "ウィツィロポチトリの代理者・先導神。戦争や祭礼に際して神輿に乗せられ、素早く走る聖戦の先頭を務める。"
+          },
+          {
+            name: "イシュティルトン",
+            nahuatl: "Ixtlilton",
+            role: "小児の治癒・薬水の神",
+            desc: "「黒い顔の人」。子供の病気を治癒し、踊りや宴会を司る心優しい医療の神。"
+          },
+          {
+            name: "テポステカトル",
+            nahuatl: "Tepoztecatl",
+            role: "プルケ酒と狂乱の神",
+            desc: "メキシコ盆地南部の山岳都市テポストランで崇められた、アガベの醸造酒プルケの神。勝利と繁栄を与える。"
+          }
+        ],
+        evils: [
+          {
+            name: "コヨルシャウキ",
+            nahuatl: "Coyolxauhqui",
+            role: "月の女神・叛逆の邪神",
+            desc: "ウィツィロポチトリの姉。母コアトリクエを殺害しようと弟たちを率いて叛乱を起こしたが、誕生した太陽神に返り討ちに遭い切断された。"
+          },
+          {
+            name: "センツォン・ウイツナワ",
+            nahuatl: "Centzon Huitznahua",
+            role: "南の400の星の邪神たち",
+            desc: "コヨルシャウキと共に太陽神を襲撃して討たれた、夜空の星々を神格化した暗黒の軍勢。"
+          },
+          {
+            name: "アウィツォトル",
+            nahuatl: "Ahuizotl",
+            role: "水辺の魔獣",
+            desc: "テスココ湖の水辺に潜む凶悪な魔獣。赤ん坊の泣き声を模して人を誘い込み、尻尾の先にある手で湖底へ引きずり込む。"
+          },
+          {
+            name: "トラカンバ",
+            nahuatl: "Tlacamba",
+            role: "人食い影魔獣",
+            desc: "湖畔や森の闇に潜み、夜道を行く旅人を奇襲して姿なく喰らうとされる恐怖の影獣。"
+          },
+          {
+            name: "チワテテオ",
+            nahuatl: "Cihuateteo",
+            role: "難産の鬼女悪霊",
+            desc: "出産で死亡し神格化した女性の悪霊。夜の十字路に現れて子供を誘拐し、病気や狂気をもたらす。"
+          },
+          {
+            name: "チャルチウトトリン",
+            nahuatl: "Chalchiuhtotolin",
+            role: "翡翠の七面鳥魔神",
+            desc: "テスカトリポカの不吉な変身姿。人々の罪悪感を抉り出し、自責の念と恐ろしい疫病をもたらす。"
+          },
+          {
+            name: "イシュキミトリ",
+            nahuatl: "Ixquimilli",
+            role: "目隠しの処刑邪神",
+            desc: "目隠しをした冷酷な裁判神。人間の不敬や過ちに対して容赦ない目くらましと死を下す。"
+          },
+          {
+            name: "クアウテモク",
+            nahuatl: "Cuauhtemoc (Evil Aspect)",
+            role: "日食の影魔神",
+            desc: "急降下するワシの姿をとる暗黒の精霊。太陽の光を遮り、日食の凶兆を引き起こす。"
+          },
+          {
+            name: "テツァウテオトル",
+            nahuatl: "Tetzauhteotl",
+            role: "凶兆の神",
+            desc: "不吉な前兆や破滅の予言そのものを神格化した、国家の災厄を告げる恐ろしい神。"
+          },
+          {
+            name: "オセルマンティ",
+            nahuatl: "Ocelomanti",
+            role: "幻惑のジャガー魔獣",
+            desc: "テスココ湖周辺の山林に出没し、咆哮によって人間の正気を奪い狂気に陥れる魔獣。"
+          }
+        ]
+      },
+      {
+        id: "region2",
+        num: "REGION II",
+        title: "旧帝国・文化遺産地域",
+        subtitle: "トゥラ／チョルーラ／テオティワカン（北西・中央高地）",
+        coords: "19.6925° N, 98.8438° W",
+        center: [19.6925, -98.8438],
+        zoom: 9,
+        desc: "アステカ以前に栄えた古代文明（トルテカやテオティワカン）の聖地。高度な天文学、哲学、暦法、そして古来の伝承が宿る学問と神話の源流地域です。",
+        markers: [
+          { lat: 19.6925, lng: -98.8438, title: "テオティワカン (Teotihuacan)" },
+          { lat: 20.0625, lng: -99.3408, title: "トゥラ遺跡 (Tula)" },
+          { lat: 19.0578, lng: -98.3020, title: "チョルーラ (Cholula)" }
+        ],
+        gods: [
+          {
+            name: "ケツァルコアトル",
+            nahuatl: "Quetzalcoatl",
+            role: "風・知識・文明の神",
+            desc: "チョルーラの大ピラミッドを聖地とする「羽毛ある蛇」。トウモロコシの発見や暦、文明を授けた文化英雄神。"
+          },
+          {
+            name: "テスカトリポカ",
+            nahuatl: "Tezcatlipoca",
+            role: "夜・魔法・運命の至高神",
+            desc: "トルテカの首都トゥラで絶大な力を誇った「煙る鏡」。黒曜石の鏡で全宇宙を見通し、王の運命をも翻弄する。"
+          },
+          {
+            name: "トラロック",
+            nahuatl: "Tlaloc",
+            role: "雨・雷・嵐の神",
+            desc: "テオティワカン期から祀られる最古級の雨神。恵みの雨を与える一方、干ばつや激しい雷撃をもたらす。"
+          },
+          {
+            name: "エエカトル",
+            nahuatl: "Ehecatl",
+            role: "風の神",
+            desc: "ケツァルコアトルの風としての側面。嘴状のマスクを持ち、恵みの雨雲を呼ぶために旋風を起こす。"
+          },
+          {
+            name: "トラウィスカルパンテクトリ",
+            nahuatl: "Tlahuizcalpantecuhtli",
+            role: "明けの明星（金星）の神",
+            desc: "「暁の主」。強い光の矢を放つ苛烈な金星の神で、その光線は病気や死をもたらすと恐れられた。"
+          },
+          {
+            name: "ウェウェテオトル",
+            nahuatl: "Huehueteotl",
+            role: "古き火の神",
+            desc: "メソアメリカ最古の神の一体。背中に火炉を載せた老人の姿で描かれ、世界の中心の秩序を維持する。"
+          },
+          {
+            name: "トナカテクトリ",
+            nahuatl: "Tonacatecuhtli",
+            role: "創造・糧の主神",
+            desc: "「我らの肉体の主」。宇宙の根源である原初神であり、地上すべての食物と生命の存在を支える。"
+          },
+          {
+            name: "カマシュトリ",
+            nahuatl: "Camaxtli",
+            role: "狩猟・戦争神",
+            desc: "トラスカラ王国等で最高神として崇められた神。天の川を象徴し、狩人たちに勝利を与える。"
+          },
+          {
+            name: "チコメコアトル",
+            nahuatl: "Chicomecoatl",
+            role: "トウモロコシと豊穣の女神",
+            desc: "「7の蛇」。主食であるトウモロコシの実りと種子の保存を司る、農業社会の重要な擁護者。"
+          },
+          {
+            name: "ミシュコアトル",
+            nahuatl: "Mixcoatl",
+            role: "天の川・狩猟の神",
+            desc: "「雲の蛇」。北方狩猟民に由来する神で、星々を狩る天界の狩人とされる。"
+          }
+        ],
+        evils: [
+          {
+            name: "イツパパロトル",
+            nahuatl: "Itzpapalotl",
+            role: "黒曜石の蝶の魔女",
+            desc: "「タモアンチャン（楽園）」を統制する魔神。猛禽の爪と黒曜石の刃の羽を持ち、夜の犠牲者を狩る。"
+          },
+          {
+            name: "イツトラコリウキ",
+            nahuatl: "Itztlacoliuhqui",
+            role: "霜・氷・屈折の邪神",
+            desc: "「曲がった黒曜石」。太陽の熱に怒って凍てつく氷と霜をもたらし、作物を枯死させる不毛の神。"
+          },
+          {
+            name: "センツォン・ミミスコア",
+            nahuatl: "Centzon Mimixcoa",
+            role: "北の400の星の野蛮神",
+            desc: "北の夜空を彷徨う400人の星の狩人。自制心を欠いた暴力と混沌の暗黒神たち。"
+          },
+          {
+            name: "チャルチウテコロトル",
+            nahuatl: "Chalchiuhtecolotl",
+            role: "翡翠のフクロウ魔鳥",
+            desc: "テスカトリポカの負の化身。夜間に出没して不吉な予言を吐き、死と災厄を撒き散らす。"
+          },
+          {
+            name: "テペヨロトル",
+            nahuatl: "Tepeyollotl",
+            role: "山の心臓・地震の魔神",
+            desc: "山深くの洞窟に潜むジャガー姿の神。暗闇で叫び声を上げ、大地を震わせる地震を起こす。"
+          },
+          {
+            name: "ウエウエコヨトル",
+            nahuatl: "Huehuecoyotl",
+            role: "詐術のコヨーテ",
+            desc: "「年老いたコヨーテ」。不和と悪戯を楽しむトリックスターで、神々と人間の間に争いを引き起こす。"
+          },
+          {
+            name: "ショチトラパル",
+            nahuatl: "Xochitlapal",
+            role: "荒野の幻惑霊",
+            desc: "古代都市間の街道に出没し、巡礼者に幻影を見せて精神を破壊し、迷わせる邪霊。"
+          },
+          {
+            name: "イツトリ",
+            nahuatl: "Itztli",
+            role: "生贄ナイフの邪神",
+            desc: "黒曜石の生贄ナイフそのものが神格化した存在。容赦ない犠牲と破壊を要求する。"
+          },
+          {
+            name: "ヤオトル",
+            nahuatl: "Yaotl",
+            role: "内乱を誘発する悪神",
+            desc: "「敵」。人々の心に疑心暗鬼を生じさせ、平和な都市国家に兄弟喧嘩や暴動を引き起こさせる。"
+          },
+          {
+            name: "テツァウチワトル",
+            nahuatl: "Tetzauhcihuatl",
+            role: "荒野の女魔",
+            desc: "夜間の街道で遭遇した者の生き血と精神を吸い尽くすと恐れられた不気味な女魔。"
+          }
+        ]
+      },
+      {
+        id: "region3",
+        num: "REGION III",
+        title: "農耕・沿岸地域",
+        subtitle: "オアハカ／ミシュテカ／太平洋沿岸",
+        coords: "17.0438° N, 96.7670° W",
+        center: [17.0438, -96.7670],
+        zoom: 8,
+        desc: "温暖な気候と豊かな農地が広がる地域。自然の生命サイクル、春の芽吹き、植物の効能、そして醸造や快楽に関する信仰が深く発達しました。",
+        markers: [
+          { lat: 17.0438, lng: -96.7670, title: "モンテ・アルバン (Monte Albán)" },
+          { lat: 16.9027, lng: -96.3597, title: "ミトラ遺跡 (Mitla)" }
+        ],
+        gods: [
+          {
+            name: "シペ・トテック",
+            nahuatl: "Xipe Totec",
+            role: "穀物・春・再生の神",
+            desc: "太平洋沿岸（ヤペテカ）起源の「皮を剥がれた主」。自らの皮膚を脱ぎ捨てることで春の芽吹きをもたらす。"
+          },
+          {
+            name: "センテオトル",
+            nahuatl: "Centeotl",
+            role: "トウモロコシの神",
+            desc: "トウモロコシの芽を神格化した存在。地中に埋められて芽を出す生命力の象徴。"
+          },
+          {
+            name: "マイアウェル",
+            nahuatl: "Mayahuel",
+            role: "リュウゼツランの女神",
+            desc: "アガベ（リュウゼツラン）とそこから作られるお酒「プルケ」の女神。400の乳房を持つ豊穣の母。"
+          },
+          {
+            name: "パテカトル",
+            nahuatl: "Patecatl",
+            role: "薬草・発酵の神",
+            desc: "マイアウェルの夫。治癒をもたらす薬草や幻覚性キノコ、お酒の発酵作用を司る。"
+          },
+          {
+            name: "ショチピリ",
+            nahuatl: "Xochipilli",
+            role: "花・音楽・歓喜の神",
+            desc: "「花の王子」。芸術、音楽、ダンス、愛、そして幻覚性植物がもたらす歓喜を司る。"
+          },
+          {
+            name: "ショチケツァル",
+            nahuatl: "Xochiquetzal",
+            role: "美・愛・織物の女神",
+            desc: "「羽毛ある花」。女性の手芸や美しさ、花火のような生命の煌めきを守護する。"
+          },
+          {
+            name: "シロネン",
+            nahuatl: "Xilonen",
+            role: "若いトウモロコシの女神",
+            desc: "夏に実る柔らかいトウモロコシの穂を象徴し、人々に飢えからの解放を与える。"
+          },
+          {
+            name: "トラソルテオトル",
+            nahuatl: "Tlazolteotl",
+            role: "罪と浄化の女神",
+            desc: "「罪を食らう者」。性愛や不道徳の罪を司るが、儀式を通じてその罪を許し浄化する。"
+          },
+          {
+            name: "アウィアテテオ",
+            nahuatl: "Ahuiateteo",
+            role: "欲望・快楽の神々",
+            desc: "人生の過剰な歓喜、祝宴、快楽を司る神々の総括。人間的な欲望の表れとされる。"
+          },
+          {
+            name: "イラマテクトリ",
+            nahuatl: "Ilamatecuhtli",
+            role: "収穫・老女神",
+            desc: "「年老いた貴婦人」。乾燥させたトウモロコシの房と秋の終わりの大地を象徴する。"
+          }
+        ],
+        evils: [
+          {
+            name: "センツォン・トトチティン",
+            nahuatl: "Centzon Totochtin",
+            role: "400匹のウサギの酒悪霊",
+            desc: "泥酔、正気喪失、暴飲暴食を引き起こす400匹のウサギの姿をした狂乱小神群。"
+          },
+          {
+            name: "オメトチトリ",
+            nahuatl: "Ometochtli",
+            role: "酒毒の首領",
+            desc: "ウサギ神たちのリーダー格。制御不能な過度の飲酒による死や酒毒をもたらす。"
+          },
+          {
+            name: "アトラコアイヤ",
+            nahuatl: "Atlacoaya",
+            role: "干ばつ・渇きの悪霊",
+            desc: "恵みの雨を拒み、作物を枯死させ、水不足による飢餓と絶望を招く悪霊。"
+          },
+          {
+            name: "ナワル",
+            nahual: "Nahual (Evil Sorcerer)",
+            role: "変身呪術師・魔物",
+            desc: "夜間に動物（ジャガーや犬）に変身し、家畜を襲い人々に病の呪いをかける悪毒な呪術師。"
+          },
+          {
+            name: "シワコアトル",
+            nahuatl: "Cihuacoatl",
+            role: "叫ぶ蛇女",
+            desc: "深夜の街や農村に現れ、悲痛な叫び声を上げて子供の病死や戦争の勃発を予告する鬼女。"
+          },
+          {
+            name: "コアトラペトラ",
+            nahuatl: "Coatlapetla",
+            role: "畑を荒らす毒蛇魔獣",
+            desc: "農地に這い出し、作物を踏みにじり農夫を丸呑みにする巨大な暗黒の蛇。"
+          },
+          {
+            name: "トトラツィン",
+            nahuatl: "Totoltzin",
+            role: "穀物腐敗の害鳥",
+            desc: "収穫後の倉庫に侵入し、一晩で食糧をカビと腐敗で全滅させる忌まわしい害鳥。"
+          },
+          {
+            name: "マクイルショチトルの影",
+            nahuatl: "Macuilxochitl's Curse",
+            role: "放蕩の祟り",
+            desc: "過度の欲望やギャンブルに溺れた者に重い皮膚病や性病の痛みを下す祟りの毒気。"
+          },
+          {
+            name: "テクシステカトルの執念",
+            nahuatl: "Tecciztecatl's Shadow",
+            role: "月影の病魔",
+            desc: "太陽になれず月に落とされた神の怨念。夜間の冷気を通じて人々に熱病をもたらす。"
+          },
+          {
+            name: "シペの剥ぎ取られた影",
+            nahuatl: "Flayed Shades",
+            role: "怨嗟の生霊",
+            desc: "生贄の儀式で剥ぎ取られた皮に残った無念の怨念が実体化した生気を吸う幻影。"
+          }
+        ]
+      },
+      {
+        id: "region4",
+        num: "REGION IV",
+        title: "地下世界・宙",
+        subtitle: "冥界「ミクトラン」・天地の境目・宇宙の混沌",
+        coords: "神話空間（世界軸 / 地下第9層）",
+        center: [19.0000, -99.0000],
+        zoom: 6,
+        desc: "メソアメリカの宇宙論における死者の世界（地下9層）および天体・日食・世界の終末と結びつく空間。物理的な恐怖や宇宙の法則そのものを表します。",
+        markers: [
+          { lat: 19.4326, lng: -99.1332, title: "世界軸 (Axis Mundi)" }
+        ],
+        gods: [
+          {
+            name: "ミクトランテクトリ",
+            nahuatl: "Mictlantecuhtli",
+            role: "冥界（ミクトラン）の王",
+            desc: "地下最下層（第9層）を支配する骸骨の王。病死した死者の魂が辿り着く最終地の支配者。"
+          },
+          {
+            name: "ミクトランシワトル",
+            nahuatl: "Mictlancihuatl",
+            role: "冥界の女王",
+            desc: "ミクトランテクトリの妻。夫と共に地下世界で死者の骨を監視し、「死者の日」の起源とされる。"
+          },
+          {
+            name: "ショロトル",
+            nahuatl: "Xolotl",
+            role: "導きと変形の犬神",
+            desc: "ケツァルコアトルの双子の弟。犬の頭をした異形神で、夜間に太陽が地下世界を通る際の護衛を務める。"
+          },
+          {
+            name: "チャルメカテクトリ",
+            nahuatl: "Chalmecatecuhtli",
+            role: "冥界の裁判官",
+            desc: "冥界の特定の階層を治め、やってきた死者の魂が生前に行った行為を厳しく審判する。"
+          },
+          {
+            name: "アコルナワカトル",
+            nahuatl: "Acolnahuacatl",
+            role: "地下の暗闇の守護神",
+            desc: "「曲がりくねった領域の主」。冥界の奥深くに存在し、生者の不法な侵入を拒む。"
+          },
+          {
+            name: "ピルツィンテクトリ",
+            nahuatl: "Piltzintecuhtli",
+            role: "幻視と夜明けの若き神",
+            desc: "地下を通る夜の太陽と結びつき、深い暗闇のあとに訪れる再生の光を象徴する。"
+          },
+          {
+            name: "ツンテモク",
+            nahuatl: "Tzontemoc",
+            role: "日没・下降の神",
+            desc: "「頭から逆さまに落ちる者」。沈みゆく太陽と、冥界へと降りていく魂の軌跡を表す。"
+          },
+          {
+            name: "ネシュテペワ",
+            nahuatl: "Nextepehua",
+            role: "灰を降らせる浄化神",
+            desc: "冥界において死者の魂から未練や物質的な垢を絶つため、灰を降らせて清める。"
+          },
+          {
+            name: "イシュポステケ",
+            nahuatl: "Ixpuzteque",
+            role: "折れた脚の神",
+            desc: "冥界の険しい道を歩む死者の魂に試練を与え、強靭さを試す異形の神。"
+          },
+          {
+            name: "シトラリクエ",
+            nahuatl: "Citlalicue",
+            role: "星々の宇宙女神",
+            desc: "「星のスカート」。夜空に輝く天の川と無数の星々を生み出した原初の世界創成女神。"
+          }
+        ],
+        evils: [
+          {
+            name: "シパクトリ",
+            nahuatl: "Cipactli",
+            role: "原初の大地怪獣",
+            desc: "原初の海に潜んでいたワニ・魚・ガマが合体した超巨大魔獣。解体された身体がメソアメリカの大地となった。"
+          },
+          {
+            name: "ツィツィミトル",
+            nahuatl: "Tzitzimitl",
+            role: "星の破壊魔神",
+            desc: "日食や世界の終末（第5の太陽の終わり）に天空から降臨し、人類を貪り喰らうとされる骨とクモの魔神。"
+          },
+          {
+            name: "シウコアトル",
+            nahuatl: "Xiuhcoatl",
+            role: "炎の魔蛇",
+            desc: "太陽神の兵器となるトルコ石の炎蛇。日照りと乾き、極限の戦争破壊力を象徴する。"
+          },
+          {
+            name: "ショチトナトナル",
+            nahuatl: "Xochitonal",
+            role: "冥界の大河の魔獣",
+            desc: "冥界の黒い川に潜む巨大イグアナ魔獣。川を渡ろうとする死者の魂を急襲して丸呑みにする。"
+          },
+          {
+            name: "イツプテケ",
+            nahuatl: "Itzpuchtequi",
+            role: "黒曜石の脚の悪魔",
+            desc: "冥界の暗闇に蠢き、絶望した魂にさらなる精神的拷問を与える破滅の悪魔。"
+          },
+          {
+            name: "テクロトル",
+            nahuatl: "Techlotl",
+            role: "冥界の人面フクロウ",
+            desc: "死者の魂に偽りの記憶を語りかけ、冥界の永久迷宮へと誘い込んで正気を奪う魔鳥。"
+          },
+          {
+            name: "ミカペトラカリ",
+            nahuatl: "Micapetlacalli",
+            role: "棺桶の悪魔",
+            desc: "死の棺を神格化した存在。生者を暗黒の箱の中に閉じ込め窒息させる恐怖の化身。"
+          },
+          {
+            name: "テツァウクアウトリ",
+            nahuatl: "Tetzauhorc",
+            role: "流星毒の怪鳥",
+            desc: "天空の割れ目から現れ、地上に不吉な流星と病の毒を降らせる巨大な怪鳥。"
+          },
+          {
+            name: "オセロトル・トナティウ",
+            nahuatl: "Ocelotl Tonatiuh",
+            role: "原初のジャガー魔獣群",
+            desc: "第1の世界（ジャガーの太陽）を滅ぼした暗黒のジャガーたち。人類を全滅させた。"
+          },
+          {
+            name: "アコリミストリ",
+            nahuatl: "Acolmiztli",
+            role: "冥界深淵の暗黒プーマ",
+            desc: "冥界の最深部を守護する漆黒のプーマ。立ち入る者の魂を一咬みで粉砕する。"
+          }
+        ]
+      }
+    ];
+
+    // -------------------------------------------------------------
+    // APP STATE & MAP INITIALIZATION
+    // -------------------------------------------------------------
+    let currentRegionIndex = 0;
+    let currentFilter = 'all'; // 'all', 'god', 'evil'
+    let searchQuery = '';
+    let leafletMap = null;
+    let mapMarkersLayer = null;
+
+    window.onload = function() {
+      renderTabs();
+      initMap();
+      selectRegion(0);
+
+      // Search event listener
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        renderEntities();
+      });
+    };
+
+    // Initialize Leaflet Map
+    function initMap() {
+      leafletMap = L.map('mapContainer', {
+        scrollWheelZoom: false
+      }).setView([19.4326, -99.1332], 8);
+
+      // Warm Parchment Map Tiles (CartoDB Positron / Esri World Street fallback style)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(leafletMap);
+
+      mapMarkersLayer = L.layerGroup().addTo(leafletMap);
+    }
+
+    // Render Region Selector Tabs
+    function renderTabs() {
+      const tabsContainer = document.getElementById('regionTabs');
+      tabsContainer.innerHTML = regionsData.map((reg, idx) => `
+        <button onclick="selectRegion(${idx})" id="tab-btn-${idx}" 
+                class="region-tab flex flex-col p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 cursor-pointer ${idx === 0 ? 'bg-aztec-paper border-aztec-gold shadow-md' : 'bg-aztec-cream/80 border-aztec-border hover:border-aztec-gold/50'}">
+          <span class="text-[10px] font-bold font-cinzel text-aztec-gold tracking-widest">${reg.num}</span>
+          <span class="text-xs sm:text-sm font-bold text-aztec-dark truncate mt-0.5">${reg.title}</span>
+        </button>
+      `).join('');
+    }
+
+    // Select Active Region
+    function selectRegion(index) {
+      currentRegionIndex = index;
+      const data = regionsData[index];
+
+      // Update Tab Styles
+      document.querySelectorAll('.region-tab').forEach((tab, idx) => {
+        if (idx === index) {
+          tab.className = "region-tab flex flex-col p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 bg-aztec-paper border-aztec-gold shadow-md ring-2 ring-aztec-gold/20";
+        } else {
+          tab.className = "region-tab flex flex-col p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 bg-aztec-cream/80 border-aztec-border hover:border-aztec-gold/50 opacity-80 hover:opacity-100";
         }
+      });
 
-        mapContainer.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('region-polygon')) return; // ポリゴンクリック優先
-            e.preventDefault();
-            startX = e.clientX - pointX;
-            startY = e.clientY - pointY;
-            isDragging = true;
+      // Update Region Details
+      document.getElementById('regionNumber').innerText = data.num;
+      document.getElementById('regionTitle').innerText = data.title;
+      document.getElementById('regionSubtitle').innerText = data.subtitle;
+      document.getElementById('regionCoords').innerHTML = `<i class="fa-solid fa-location-dot text-aztec-red mr-1"></i>${data.coords}`;
+      document.getElementById('regionDesc').innerText = data.desc;
+
+      // Update Map View and Markers
+      if (leafletMap) {
+        leafletMap.setView(data.center, data.zoom);
+        mapMarkersLayer.clearLayers();
+
+        // Custom Gold Icon
+        const goldIcon = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="background-color:#C59B27; width:16px; height:16px; border-radius:50%; border:2px solid #FFF; box-shadow:0 0 6px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
         });
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            pointX = e.clientX - startX;
-            pointY = e.clientY - startY;
-            updateTransform();
+        data.markers.forEach(m => {
+          L.marker([m.lat, m.lng], { icon: goldIcon })
+           .addTo(mapMarkersLayer)
+           .bindPopup(`<strong style="font-family:'Noto Serif JP',serif; color:#2C261E;">${m.title}</strong>`);
         });
+      }
 
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+      // Re-render entities
+      renderEntities();
+    }
 
-        // ホイールによるズーム
-        mapContainer.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const xs = (e.clientX - pointX) / scale;
-            const ys = (e.clientY - pointY) / scale;
-            const delta = -e.deltaY;
-            (delta > 0) ? (scale *= 1.1) : (scale /= 1.1);
-            scale = Math.min(Math.max(0.5, scale), 3); // ズーム限界
-            pointX = e.clientX - xs * scale;
-            pointY = e.clientY - ys * scale;
-            updateTransform();
-        });
+    // Filter Switcher
+    function setEntityFilter(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-aztec-gold', 'text-white', 'border-aztec-gold');
+        btn.classList.add('bg-aztec-cream', 'text-aztec-dark', 'border-aztec-border');
+      });
 
-        function zoom(factor) {
-            scale *= factor;
-            scale = Math.min(Math.max(0.5, scale), 3);
-            updateTransform();
-        }
+      const activeBtn = document.getElementById(
+        type === 'all' ? 'filterAll' : type === 'god' ? 'filterGods' : 'filterEvils'
+      );
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-aztec-cream', 'border-aztec-border');
+        activeBtn.classList.add('active', 'bg-aztec-gold', 'text-white', 'border-aztec-gold');
+      }
 
-        function resetMap() {
-            scale = 1;
-            pointX = 0;
-            pointY = 0;
-            updateTransform();
-        }
+      renderEntities();
+    }
 
-        // 地域選択処理
-        function selectRegion(regionKey) {
-            currentRegionKey = regionKey;
-            const data = mythologyData[regionKey];
+    // Render Entities List Grid
+    function renderEntities() {
+      const region = regionsData[currentRegionIndex];
+      const grid = document.getElementById('entityGrid');
+      const emptyState = document.getElementById('emptyState');
 
-            // ポリゴンのハイライト処理
-            document.querySelectorAll('.region-polygon').forEach(p => p.classList.remove('active'));
-            const selectedGroup = document.getElementById(`region-${regionKey}`);
-            if (selectedGroup) {
-                selectedGroup.querySelector('.region-polygon').classList.add('active');
-            }
+      // Prepare items with type tag
+      let items = [];
+      if (currentFilter === 'all' || currentFilter === 'god') {
+        region.gods.forEach(g => items.push({ ...g, type: 'god' }));
+      }
+      if (currentFilter === 'all' || currentFilter === 'evil') {
+        region.evils.forEach(e => items.push({ ...e, type: 'evil' }));
+      }
 
-            // ヘッダー情報更新
-            document.getElementById('region-title').textContent = data.name;
-            document.getElementById('count-monsters').textContent = data.monsters.length;
-            document.getElementById('count-gods').textContent = data.gods.length;
+      // Filter by Search Query
+      if (searchQuery) {
+        items = items.filter(i => 
+          i.name.toLowerCase().includes(searchQuery) ||
+          i.nahuatl.toLowerCase().includes(searchQuery) ||
+          i.role.toLowerCase().includes(searchQuery) ||
+          i.desc.toLowerCase().includes(searchQuery)
+        );
+      }
 
-            renderList();
-        }
+      // Update Counts
+      document.getElementById('countAll').innerText = region.gods.length + region.evils.length;
+      document.getElementById('countGods').innerText = region.gods.length;
+      document.getElementById('countEvils').innerText = region.evils.length;
 
-        // タブ切り替え処理
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('tab-monsters').classList.toggle('active', tab === 'monsters');
-            document.getElementById('tab-gods').classList.toggle('active', tab === 'gods');
-            renderList();
-        }
+      if (items.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
 
-        // リスト描画処理
-        function renderList() {
-            const container = document.getElementById('panel-content');
-            container.innerHTML = '';
+      emptyState.classList.add('hidden');
 
-            if (!currentRegionKey) {
-                container.innerHTML = '<p style="color: #7a6a53; text-align: center; margin-top: 40px;">地域が選択されていません。</p>';
-                return;
-            }
+      grid.innerHTML = items.map((item, index) => {
+        const isGod = item.type === 'god';
+        const iconClass = isGod ? 'fa-sun text-amber-600' : 'fa-skull text-aztec-red';
+        const badgeBg = isGod ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-red-100 text-red-900 border-red-300';
+        const typeLabel = isGod ? '神 (God)' : '邪神・魔獣 (Evil/Monster)';
 
-            const items = mythologyData[currentRegionKey][currentTab];
+        return `
+          <div onclick="openModal('${item.type}', ${index}, '${encodeURIComponent(JSON.stringify(item))}') text-left" 
+               class="aztec-pattern rounded-xl p-5 hover:border-aztec-gold transition-all duration-200 cursor-pointer flex flex-col justify-between group hover:shadow-lg">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded border ${badgeBg} flex items-center gap-1">
+                  <i class="fa-solid ${iconClass}"></i> ${typeLabel}
+                </span>
+                <span class="text-xs font-cinzel text-aztec-brown/70 italic">${item.nahuatl}</span>
+              </div>
+              
+              <h4 class="text-lg font-bold text-aztec-dark group-hover:text-aztec-gold transition-colors flex items-center justify-between">
+                <span>${item.name}</span>
+                <i class="fa-solid fa-chevron-right text-xs text-aztec-brown/40 group-hover:translate-x-1 transition-transform"></i>
+              </h4>
+              
+              <p class="text-xs font-semibold text-aztec-gold mb-2">${item.role}</p>
+              
+              <p class="text-xs text-aztec-brown line-clamp-3 leading-relaxed">
+                ${item.desc}
+              </p>
+            </div>
 
-            items.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
+            <div class="mt-4 pt-3 border-t border-aztec-border/50 flex items-center justify-between text-[11px] text-aztec-brown/80 font-semibold">
+              <span>詳細解説を見る</span>
+              <span class="text-aztec-gold group-hover:underline">TAP TO UNFOLD &rarr;</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-                card.innerHTML = `
-                    <div class="item-title">${item.name}</div>
-                    <div class="item-location">📍 ${item.location}</div>
-                    <div class="item-section">
-                        <div class="item-section-title">【内容】</div>
-                        <div>${item.desc}</div>
-                    </div>
-                    <div class="item-section">
-                        <div class="item-section-title">【誕生経緯】</div>
-                        <div>${item.origin}</div>
-                    </div>
-                `;
+    // Modal Control Functions
+    function openModal(type, index, encodedData) {
+      const item = JSON.parse(decodeURIComponent(encodedData));
+      const modal = document.getElementById('detailModal');
+      const modalContent = document.getElementById('modalContent');
+      const modalBody = document.getElementById('modalBody');
 
-                container.appendChild(card);
-            });
-        }
-    </script>
+      const isGod = item.type === 'god';
+      const icon = isGod ? '☀️' : '👹';
+      const typeBg = isGod ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-red-100 text-red-900 border-red-300';
+      const typeText = isGod ? '守護神・神性 (Deity)' : '邪神・魔獣・悪霊 (Evil Entity / Beast)';
+
+      modalBody.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">${icon}</span>
+            <div>
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded border ${typeBg}">
+                ${typeText}
+              </span>
+              <p class="text-xs font-cinzel text-aztec-brown/70 mt-1">Nahuatl: ${item.nahuatl}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-2xl sm:text-3xl font-bold text-aztec-dark">${item.name}</h3>
+            <p class="text-sm font-bold text-aztec-gold mt-1">${item.role}</p>
+          </div>
+
+          <div class="p-4 bg-aztec-cream rounded-xl border border-aztec-border">
+            <h4 class="text-xs font-bold text-aztec-brown uppercase tracking-wider mb-1">神話的解説と傳承・役割</h4>
+            <p class="text-sm text-aztec-dark leading-relaxed whitespace-pre-line">
+              ${item.desc}
+            </p>
+          </div>
+
+          <div class="p-4 bg-aztec-goldLight/60 rounded-xl border border-aztec-gold/30 text-xs text-aztec-brown space-y-1">
+            <p><strong>関連地域・宇宙領域:</strong> ${regionsData[currentRegionIndex].title} (${regionsData[currentRegionIndex].subtitle})</p>
+            <p><strong>メソアメリカ宇宙論における位置付け:</strong> 世界の調和と運行、生と死のサイクルを維持するための不変の構成要素。</p>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+      }, 10);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('detailModal');
+      const modalContent = document.getElementById('modalContent');
+      
+      modal.classList.add('opacity-0');
+      modalContent.classList.remove('scale-100');
+      modalContent.classList.add('scale-95');
+
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    // Close Modal on Background Click
+    document.getElementById('detailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'detailModal') {
+        closeModal();
+      }
+    });
+  </script>
 </body>
 </html>
